@@ -15,7 +15,7 @@ int main(int argc, char **argv){
     }
 
     //creazione buffers
-    char outBuff[2048], inBuff[2048];
+    char *stringa1 = argv[3], *stringa2 = argv[4], inBuff[2048];
 
     //creazione strutture per risoluzione nomi
     struct addrinfo hints, *res;
@@ -47,13 +47,13 @@ int main(int argc, char **argv){
     freeaddrinfo(res);
 
     //scrittura al server
-    memset(&outBuff, 0, sizeof(outBuff));
-    write(sd, outBuff, strlen(outBuff));
+    write(sd, stringa1, strlen(stringa1) + 1);
+    write(sd, stringa2, strlen(stringa2) + 1);
 
     //ricezione dal server
-    memset(&inBuff, 0, sizeof(inBuff));
+    //memset(&inBuff, 0, sizeof(inBuff));
     read(sd, inBuff, sizeof(inBuff));
     write(STDOUT_FILENO, inBuff, strlen(inBuff));
-
-    close(sd);
+    printf("\n");
+    shutdown(sd, SHUT_RDWR);
 }

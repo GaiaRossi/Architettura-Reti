@@ -15,7 +15,7 @@ int main(int argc, char** argv){
     }
 
     //creazione buffer richiesta e risposta
-    char reqBuff[2048], resBuff[2048];
+    char stringa1[2048], stringa2[2048], resBuff[2048];
 
     //creazione strutture per risoluzione nome
     struct addrinfo hints, *res;
@@ -68,16 +68,21 @@ int main(int argc, char** argv){
     }
 
     //leggo dal client
-    read(nuovo_sd, reqBuff, sizeof(reqBuff));
+    read(nuovo_sd, stringa1, sizeof(stringa1));
+    read(nuovo_sd, stringa2, sizeof(stringa2));
 
-    write(STDOUT_FILENO, reqBuff, strlen(reqBuff));
-    printf("\n");
+    printf("stringhe: %s %s\n", stringa1, stringa2);
 
-    sprintf(resBuff, "connesso");
+    if(strcmp(stringa1, stringa2) == 0){
+        sprintf(resBuff, "SI");
+    }
+    else{
+        sprintf(resBuff, "NO");
+    }
 
     //scrittura al client
     write(nuovo_sd, resBuff, strlen(resBuff));
 
-    close(nuovo_sd);
-    close(sd);
+    shutdown(nuovo_sd, SHUT_RDWR);
+    shutdown(sd, SHUT_RDWR);
 }
