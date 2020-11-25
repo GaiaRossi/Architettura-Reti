@@ -68,8 +68,15 @@ int main(int argc, char** argv){
     }
 
     //leggo dal client
-    read(nuovo_sd, stringa1, sizeof(stringa1));
-    read(nuovo_sd, stringa2, sizeof(stringa2));
+    read(nuovo_sd, stringa1, sizeof(stringa1) - 1);
+    //necessita di intervallare le due read perche
+    //non ci sta nessuna garanzia che, per ogni read,
+    //io legga una parola soltanto
+
+    //invio quindi ack al client
+    write(nuovo_sd, stringa1, strlen(stringa1));
+
+    read(nuovo_sd, stringa2, sizeof(stringa2) - 1);
 
     printf("stringhe: %s %s\n", stringa1, stringa2);
 

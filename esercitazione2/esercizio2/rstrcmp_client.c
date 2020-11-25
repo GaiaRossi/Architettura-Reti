@@ -48,10 +48,16 @@ int main(int argc, char **argv){
 
     //scrittura al server
     write(sd, stringa1, strlen(stringa1) + 1);
+    //non possono mettere due write di seguito
+    //intervallo con ack di server
+    memset(&inBuff, 0, sizeof(inBuff));
+    read(sd, inBuff, sizeof(inBuff) - 1);
+    
+    //scrivo la seconda stringa
     write(sd, stringa2, strlen(stringa2) + 1);
 
     //ricezione dal server
-    //memset(&inBuff, 0, sizeof(inBuff));
+    memset(&inBuff, 0, sizeof(inBuff));
     read(sd, inBuff, sizeof(inBuff));
     write(STDOUT_FILENO, inBuff, strlen(inBuff));
     printf("\n");

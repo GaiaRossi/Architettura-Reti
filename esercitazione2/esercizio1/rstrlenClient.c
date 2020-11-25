@@ -78,7 +78,7 @@ int main(int argc, char** argv){
         int nread;
         nread = read(sd, risposta, sizeof(risposta));
         printf("Letti %d caratteri\n", nread);
-        write(STDOUT_FILENO, risposta, sizeof(risposta));
+        write(STDOUT_FILENO, risposta, strlen(risposta));
         printf("\n");
 
         //nuovo input
