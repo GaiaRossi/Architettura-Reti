@@ -55,6 +55,7 @@ int main(int argc, char** argv){
         int i;
         for(i = 4; i < argc; i++){
             strcat(opzioni, argv[i]);
+            strcat(opzioni, " ");
         }
         write(sd, opzioni, strlen(opzioni));
     }

@@ -1,0 +1,11 @@
+terminated data
+client		server
+vino	------->
+	<------ ack
+annata	------->
+	<------ risposta/fine
+.
+.
+.
+
+fine	------->

@@ -1,0 +1,5 @@
+client			server
+nome_file, td -->
+	<--	Y/N, td
+stringa, td   -->
+	<--	risultato, td

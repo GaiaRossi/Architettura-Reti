@@ -1,0 +1,4 @@
+bianco 4 1980 300
+rosso 3 1903 400
+bianco 2 1990 100
+bianco 2 1980 200

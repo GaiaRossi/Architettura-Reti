@@ -1,0 +1,8 @@
+terminated data
+client		server
+categoria ----->
+	<------ risposta
+.
+.
+.
+fine	------->
