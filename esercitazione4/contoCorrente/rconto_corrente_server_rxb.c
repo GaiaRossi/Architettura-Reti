@@ -1,23 +1,45 @@
 #define _POSIX_C_SOURCE	200809L
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
 #include <unistr.h>
-#include <signal.h>
-#include <wait.h>
+#include "utils.h"
+#include "rxb.h"
+
+#define MAX_REQUEST_SIZE 1024*64
 
 int status;
+
+void child_handler(int signo){
+    while(waitpid(-1, &status, WNOHANG) > 0){
+        continue;
+    }
+}
 
 int main(int argc, char** argv){
     //controllo argomenti
     if(argc != 2){
         fprintf(stderr, "Uso: ./server porta\n");
+        exit(EXIT_FAILURE);
+    }
+
+    //installo segnali
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    sa.sa_handler = child_handler;
+    if(sigaction(SIGCHLD, &sa, NULL) == -1){
+        perror("Errore sigaction");
         exit(EXIT_FAILURE);
     }
 
@@ -56,7 +78,11 @@ int main(int argc, char** argv){
 
     int nuovo_sd, pid;
     for(;;){
-        nuovo_sd = accept(sd, NULL, NULL);
+        //controllo valore di ritorno accept
+        if((nuovo_sd = accept(sd, NULL, NULL)) < 0){
+            perror("Errore accept");
+            exit(EXIT_FAILURE);
+        }
         pid = fork();
 
         if(pid < 0){
@@ -68,13 +94,33 @@ int main(int argc, char** argv){
         else if(pid == 0){
             //codice figlio
             close(sd);
+            rxb_t rxb;
+
+            //disabilito gestore dei segnali
+            memset(&sa, 0, sizeof(sa));
+            sigemptyset(&sa.sa_mask);
+            sa.sa_handler = SIG_DFL;
+
+            if(sigaction(SIGCHLD, &sa, NULL) == -1){
+                perror("Errore sigaction figlio");
+                exit(EXIT_FAILURE);
+            }
 
             //leggo spese richieste
-            char categoria[2048];
+            uint8_t categoria[MAX_REQUEST_SIZE];
+            size_t categoria_len = sizeof(categoria) - 1;
+            //inizializzo il buffer di ricezione
+            rxb_init(&rxb, MAX_REQUEST_SIZE);
             memset(categoria, 0, sizeof(categoria));
-            read(nuovo_sd, categoria, sizeof(categoria) - 1);
-
-            while(strcmp(categoria, "fine") != 0){
+            
+            while(rxb_readline(&rxb, nuovo_sd, categoria, &categoria_len) != -1){
+                //controllo validita stringa ricevuta
+                if(u8_check(categoria, categoria_len) != NULL){
+                    fprintf(stderr, "Stringa non in UTF-8\n");
+                    close(nuovo_sd);
+                    exit(EXIT_FAILURE);
+                }
+                
                 //pipe tra nipoti
                 int pipefd[2];
                 if(pipe(pipefd) < 0){
@@ -133,20 +179,14 @@ int main(int argc, char** argv){
                 wait(&status);
                 wait(&status);
 
-                //avviso che ho finito
-                char fine[1024];
-                memset(fine, 0, sizeof(fine));
-                snprintf(fine, strlen("fine") + 1, "fine");
-                write(nuovo_sd, fine, strlen(fine));
+                rxb_destroy(&rxb);
 
-                //leggo prossima categoria
-                memset(categoria, 0, sizeof(categoria));
-                read(nuovo_sd, categoria, sizeof(categoria) - 1);
+                //avviso che ho finito
+                char *fine = "fine\n";
+                write_all(nuovo_sd, fine, strlen(fine));
             }
             //debug
-            char debug[1024];
-            memset(debug, 0, sizeof(debug));
-            snprintf(debug, strlen("Uscito da while\n") + 1, "Uscito da while\n");
+            char *debug = "uscito da while\n";
             write(STDOUT_FILENO, debug, strlen(debug));
             exit(EXIT_SUCCESS);
         }

@@ -100,7 +100,7 @@ int main(int argc, char** argv){
                     //codice nipote grep1
                     close(nuovo_sd);
                     close(pipefd[0]);
-                    //ridirezione
+                    //redirezione
                     close(1);
                     dup(pipefd[1]);
                     close(pipefd[1]);
@@ -118,7 +118,7 @@ int main(int argc, char** argv){
                 else if(pid_nipote == 0){
                     //codice nipote grep2
                     close(pipefd[1]);
-                    //ridirezione
+                    //redirezione
                     close(0);
                     dup(pipefd[0]);
                     close(pipefd[0]);
@@ -159,6 +159,4 @@ int main(int argc, char** argv){
         //codice padre
         close(nuovo_sd);
     }
- 
-
 }

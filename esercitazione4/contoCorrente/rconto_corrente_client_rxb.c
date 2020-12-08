@@ -1,14 +1,21 @@
 #define _POSIX_C_SOURCE	200809L
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
 #include <unistr.h>
+#include "utils.h"
+#include "rxb.h"
+
+#define MAX_REQUEST_SIZE 1024*64
 
 int main(int argc, char** argv){
     //./client localhost porta
@@ -17,7 +24,8 @@ int main(int argc, char** argv){
         fprintf(stderr, "Uso: ./client server porta\n");
         exit(EXIT_FAILURE);
     }
-
+    
+    rxb_t rxb;
     struct addrinfo hints, *res;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -51,39 +59,55 @@ int main(int argc, char** argv){
 
     freeaddrinfo(res);
 
+    rxb_init(&rxb, MAX_REQUEST_SIZE);
+
     /* lettura input */
     char input[2048];
     char risposta[2048];
     memset(input, 0, sizeof(input));
     //lettura categoria
-    scanf("%s", input);
+    if(fgets(input, sizeof(input), stdin) == NULL){
+        perror("Errore fgets");
+        close(sd);
+        exit(EXIT_FAILURE);
+    }
 
     while(strcmp(input, "fine") != 0){
         //invio a server
-        write(sd, input, strlen(input) + 1);
-        //attendo risposta
-        memset(risposta, 0, sizeof(risposta));
-        read(sd, risposta, sizeof(risposta) - 1);
-        while(strcmp(risposta, "fine") != 0){
-            //stampo risposta
-            write(STDOUT_FILENO, risposta, strlen(risposta));
-            memset(risposta, 0, sizeof(risposta));
-            read(sd, risposta, sizeof(risposta) - 1);
+        if(write_all(sd, input, strlen(input)) < 0){
+            perror("Errore write all");
+            close(sd);
+            exit(EXIT_FAILURE);
         }
-        //debug
-        char debug[1024];
-        memset(debug, 0, sizeof(debug));
-        snprintf(debug, strlen("Inserisci nuovo elemento\n") + 1, "Inserisci nuovo elemento\n");
-        write(STDOUT_FILENO, debug, strlen(debug));
+        //attendo risposta
+        size_t risposta_len = sizeof(risposta) - 1;
+        memset(risposta, 0, sizeof(risposta));
 
+        do{
+            //stampo risposta
+            if(rxb_readline(&rxb, sd, risposta, &risposta_len) < 0){
+                rxb_destroy(&rxb);
+                close(sd);
+                fprintf(stderr, "Connessione chiusa dal server\n");
+                exit(EXIT_FAILURE);
+            }
+            puts(risposta);
+        }while(strcmp(risposta, "fine\n") != 0);
+        //debug
+        char *debug = "Inserisci nuovo elemento\n";
+        write(STDOUT_FILENO, debug, strlen(debug));
 
         //preparo per il prossimo input
         memset(input, 0, sizeof(input));
-        scanf("%s", input);
+        if(fgets(input, sizeof(input), stdin) == NULL){
+            perror("Errore fgets");
+            close(sd);
+            exit(EXIT_FAILURE);
+        }
     }
 
     //invio fine a server
-    write(sd, input, strlen(input) + 1);
+    write_all(sd, "\nfine\n", strlen("fine"));
 
     close(sd);
 }
