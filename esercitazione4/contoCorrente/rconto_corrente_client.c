@@ -64,7 +64,7 @@ int main(int argc, char** argv){
         //attendo risposta
         memset(risposta, 0, sizeof(risposta));
         read(sd, risposta, sizeof(risposta) - 1);
-        while(strcmp(risposta, "fine") != 0){
+        while(strcmp(risposta, "fine\n") != 0){
             //stampo risposta
             write(STDOUT_FILENO, risposta, strlen(risposta));
             memset(risposta, 0, sizeof(risposta));

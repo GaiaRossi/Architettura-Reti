@@ -40,7 +40,7 @@ int rxb_readline(struct rx_buffer *buf, int sock, void *dest_buf, size_t *dest_l
 		if (term_ptr != NULL) {
 			/* Calcolo quanti dati devo copiare */
 			size_t to_copy = term_ptr - buf->buffer;
-
+			
 			/* Verifico che dest sia sufficientement grande */
 			if (*dest_len < to_copy) {
 				fprintf(stderr, "Buffer too small!\n");
@@ -71,8 +71,6 @@ int rxb_readline(struct rx_buffer *buf, int sock, void *dest_buf, size_t *dest_l
 		};
 
 		cc = read(sock, buf->buffer + buf->bytes_received, left);
-		//---------------------
-		//printf("rbx: %s", buf->buffer);
                 if (cc == 0)
 			return -1;
 		if (cc < 0) {

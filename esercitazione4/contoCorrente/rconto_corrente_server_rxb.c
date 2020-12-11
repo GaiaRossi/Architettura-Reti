@@ -15,7 +15,7 @@
 #include "utils.h"
 #include "rxb.h"
 
-#define MAX_REQUEST_SIZE 1024*64
+#define MAX_REQUEST_SIZE 2048
 
 int status;
 
@@ -112,8 +112,12 @@ int main(int argc, char** argv){
             //inizializzo il buffer di ricezione
             rxb_init(&rxb, MAX_REQUEST_SIZE);
             memset(categoria, 0, sizeof(categoria));
-            
-            while(rxb_readline(&rxb, nuovo_sd, categoria, &categoria_len) != -1){
+            rxb_readline(&rxb, nuovo_sd, categoria, &categoria_len);
+
+            char categoria_str[2048];
+            snprintf(categoria_str, sizeof(categoria_str), "%s", categoria);
+
+            while(strcmp(categoria_str, "fine")){
                 //controllo validita stringa ricevuta
                 if(u8_check(categoria, categoria_len) != NULL){
                     fprintf(stderr, "Stringa non in UTF-8\n");
@@ -179,11 +183,14 @@ int main(int argc, char** argv){
                 wait(&status);
                 wait(&status);
 
-                rxb_destroy(&rxb);
+                //rxb_destroy(&rxb);
 
                 //avviso che ho finito
                 char *fine = "fine\n";
                 write_all(nuovo_sd, fine, strlen(fine));
+                memset(categoria, 0, sizeof(categoria));
+                rxb_readline(&rxb, nuovo_sd, categoria, &categoria_len);
+                snprintf(categoria_str, sizeof(categoria_str), "%s", categoria);
             }
             //debug
             char *debug = "uscito da while\n";

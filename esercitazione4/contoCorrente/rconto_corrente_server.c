@@ -136,7 +136,7 @@ int main(int argc, char** argv){
                 //avviso che ho finito
                 char fine[1024];
                 memset(fine, 0, sizeof(fine));
-                snprintf(fine, strlen("fine") + 1, "fine");
+                snprintf(fine, strlen("fine\n") + 1, "fine\n");
                 write(nuovo_sd, fine, strlen(fine));
 
                 //leggo prossima categoria

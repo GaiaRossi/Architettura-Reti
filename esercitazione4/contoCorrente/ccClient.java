@@ -21,6 +21,7 @@ public class ccClient{
             while(!(input = tastiera.readLine()).equals("fine")){
                 //invio la categoria
                 netOut.write(input, 0, input.length());
+                netOut.newLine();
                 netOut.flush();
 
                 //leggo risposta
@@ -28,7 +29,10 @@ public class ccClient{
                     System.out.println(risposta);
                 }
             }
-        
+            
+            netOut.write("fine", 0, "fine".length());
+            netOut.flush();
+
             netOut.close();
             netIn.close();
             socket.close();

@@ -15,7 +15,7 @@
 #include "utils.h"
 #include "rxb.h"
 
-#define MAX_REQUEST_SIZE 1024*64
+#define MAX_REQUEST_SIZE 2048
 
 int main(int argc, char** argv){
     //./client localhost porta
@@ -72,7 +72,7 @@ int main(int argc, char** argv){
         exit(EXIT_FAILURE);
     }
 
-    while(strcmp(input, "fine") != 0){
+    while(strcmp(input, "fine\n") != 0){
         //invio a server
         if(write_all(sd, input, strlen(input)) < 0){
             perror("Errore write all");
@@ -82,17 +82,20 @@ int main(int argc, char** argv){
         //attendo risposta
         size_t risposta_len = sizeof(risposta) - 1;
         memset(risposta, 0, sizeof(risposta));
+        rxb_readline(&rxb, sd, risposta, &risposta_len);
 
-        do{
+        while(strcmp(risposta, "fine") != 0){
             //stampo risposta
+            puts(risposta);
+            memset(risposta, 0, sizeof(risposta));
             if(rxb_readline(&rxb, sd, risposta, &risposta_len) < 0){
                 rxb_destroy(&rxb);
                 close(sd);
                 fprintf(stderr, "Connessione chiusa dal server\n");
                 exit(EXIT_FAILURE);
             }
-            puts(risposta);
-        }while(strcmp(risposta, "fine\n") != 0);
+        }
+        
         //debug
         char *debug = "Inserisci nuovo elemento\n";
         write(STDOUT_FILENO, debug, strlen(debug));
@@ -107,7 +110,7 @@ int main(int argc, char** argv){
     }
 
     //invio fine a server
-    write_all(sd, "\nfine\n", strlen("fine"));
+    write_all(sd, "fine\n", strlen("fine\n"));
 
     close(sd);
 }
