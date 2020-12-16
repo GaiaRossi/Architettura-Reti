@@ -109,16 +109,21 @@ int main(int argc, char** argv){
             char password[DIMENSIONE_BUFFER];
             char rivista[DIMENSIONE_BUFFER];
 
+            memset(netIn, 0, sizeof(netIn));
+            memset(email, 0, sizeof(email));
+            memset(password, 0, sizeof(password));
+            memset(rivista, 0, sizeof(rivista));
+
             rxb_t rxb;
             rxb_init(&rxb, DIMENSIONE_BUFFER);
             
             /* ricevo richiesta */
             size_t netIn_len;
             for(;;){
-                memset(netIn, 0, sizeof(netIn));
                 memset(email, 0, sizeof(email));
                 memset(password, 0, sizeof(password));
                 memset(rivista, 0, sizeof(rivista));
+                memset(netIn, 0, sizeof(netIn));
                 netIn_len = sizeof(netIn) - 1;
  
                 if(rxb_readline(&rxb, nuovo_sd, netIn, &netIn_len) < 0){
@@ -127,6 +132,7 @@ int main(int argc, char** argv){
                 strcpy(email, netIn);
 
                 memset(netIn, 0, sizeof(netIn));
+                netIn_len = sizeof(netIn) - 1;
 
                 if(rxb_readline(&rxb, nuovo_sd, netIn, &netIn_len) < 0){
                     break;
@@ -134,6 +140,7 @@ int main(int argc, char** argv){
                 strcpy(password, netIn);
 
                 memset(netIn, 0, sizeof(netIn));
+                netIn_len = sizeof(netIn) - 1;
 
                 if(rxb_readline(&rxb, nuovo_sd, netIn, &netIn_len) < 0){
                     break;
@@ -200,33 +207,69 @@ int main(int argc, char** argv){
                     close(pipefd[0]);
                     close(pipefd[1]);
 
+                    int pipe_padre[2];
+                    if(pipe(pipe_padre) < 0){
+                        perror("Errore pipe padre");
+                        close(nuovo_sd);
+                        exit(EXIT_FAILURE);
+                    }
+
                     if((pidn = fork()) < 0){
                         perror("Nipote sort");
                         exit(EXIT_FAILURE);
                     }
                     else if(pidn == 0){
                         /* sort */
+                        close(nuovo_sd);
+                        close(pipe_padre[0]);
                         close(pipefd1[1]);
                         close(0);
                         dup(pipefd1[0]);
                         close(pipefd1[0]);
 
                         close(1);
-                        dup(nuovo_sd);
-                        close(nuovo_sd);
+                        dup(pipe_padre[1]);
+                        close(pipe_padre[1]);
 
                         execlp("sort", "sort", "-rn", (char *)0);
                         exit(EXIT_FAILURE);
                     }
 
+                    close(pipe_padre[1]);
                     close(pipefd1[0]);
                     close(pipefd1[1]);
 
                     wait(&status);
                     wait(&status);
+                    
+                    /* leggo output figlio */
+                    char buffer[DIMENSIONE_BUFFER];
+                    memset(buffer, 0, sizeof(buffer));
+
+                    char c;
+                    int numero_riviste = 0;
+
+                    while(read(pipe_padre[0], &c, 1) == 1){
+                        if(c == '\n'){
+                            strcat(buffer, &c);
+                            write_all(nuovo_sd, buffer, strlen(buffer));
+                            numero_riviste++;
+                            memset(buffer, 0, sizeof(buffer));
+                        }
+                        else{
+                            strcat(buffer, &c);
+                        }
+                        
+                    }
+
+                    memset(buffer, 0, sizeof(buffer));
+                    snprintf(buffer, sizeof(buffer) - 1, "Il numero di riviste da leggere e': %d\n", numero_riviste);
+
+                    write_all(nuovo_sd, buffer, strlen(buffer));
 
                     char *fine_richiesta = "finerichiesta\n";
                     write_all(nuovo_sd, fine_richiesta, strlen(fine_richiesta));
+                    close(pipe_padre[0]);
                 }
             }
             close(nuovo_sd);

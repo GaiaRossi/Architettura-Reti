@@ -15,8 +15,7 @@
 #include "utils.h"
 #include "rxb.h"
 
-//lista_articoli   server   porta
-#define DIMENSIONE_BUFFER 4096
+#define DIMENSIONE_BUFFER 2048
 
 int main(int argc, char **argv){
     /* bollettino_neve server porta */
@@ -62,73 +61,38 @@ int main(int argc, char **argv){
     /* preparazione buffers */
     char netOut[DIMENSIONE_BUFFER];
     char netIn[DIMENSIONE_BUFFER];
-    char email[DIMENSIONE_BUFFER];
-    char password[DIMENSIONE_BUFFER];
-    char rivista[DIMENSIONE_BUFFER];
 
     memset(netOut, 0, sizeof(netOut));
     memset(netIn, 0, sizeof(netIn));
-    memset(email, 0, sizeof(email));
-    memset(password, 0, sizeof(password));
-    memset(rivista, 0, sizeof(rivista));
-    
+
     rxb_t rxb;
+
     rxb_init(&rxb, DIMENSIONE_BUFFER);
 
-    /* lettura input */
     for(;;){
-        printf("Inserisci email:\n");
-        fgets(email, sizeof(email), stdin);
+        printf("Inserisci la stringa:\n");
+        fgets(netOut, sizeof(netOut) - 1, stdin);
 
-        if(strcmp(email, "fine\n") == 0){
+        if(strcmp(netOut, "fine\n") == 0){
             break;
         }
 
-        printf("Inserisci la password:\n");
-        fgets(password, sizeof(password), stdin);
-
-        if(strcmp(password, "fine\n") == 0){
-            break;
-        }
-
-        printf("Inserisci la rivista di interesse:\n");
-        fgets(rivista, sizeof(rivista), stdin);
-
-        if(strcmp(rivista, "fine\n") == 0){
-            break;
-        }
-
-        strcpy(netOut, email);
-        strcat(netOut, password);
-        strcat(netOut, rivista);
-
-        /* invio al server */
         write_all(sd, netOut, strlen(netOut));
 
-        /* Leggo la risposta del server e la stampo a video */
-        char response[DIMENSIONE_BUFFER];
-        memset(response, 0, sizeof(response));
-        size_t response_len;
+        /* lettura risposta */
+        size_t netIn_len;
+        for(;;){
+            netIn_len = sizeof(netIn) - 1;
+            memset(netIn, 0, sizeof(netIn));
 
-        while(strcmp(response, "finerichiesta") != 0){
-            response_len = sizeof(response) - 1;
-            memset(response, 0, sizeof(response));
-
-            /* Ricezione risultato */
-            if (rxb_readline(&rxb, sd, response, &response_len) < 0) {
-                rxb_destroy(&rxb);
-                fprintf(stderr, "Connessione chiusa dal server!\n");
-                exit(EXIT_FAILURE);
+            rxb_readline(&rxb, sd, netIn, &netIn_len);
+            if(strcmp(netIn, "fine") == 0){
+                break;
             }
-
-            /* Stampo riga letta da Server */
-            if(strcmp(response, "finerichiesta") != 0){
-                puts(response);            
-            }
+            puts(netIn);
         }
     }
 
-    printf("Richiesta finita\n");
     rxb_destroy(&rxb);
     close(sd);
 }
