@@ -61,7 +61,8 @@ int main(int argc, char** argv){
         exit(EXIT_FAILURE);
     }
 
-    if(bind(sd, res->ai_addr, res->ai_addrlen) < 0){        perror("Errore bind");
+    if(bind(sd, res->ai_addr, res->ai_addrlen) < 0){        
+        perror("Errore bind");
         close(sd);
         exit(EXIT_FAILURE);
     }

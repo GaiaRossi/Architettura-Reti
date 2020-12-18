@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -121,7 +122,10 @@ int main(int argc, char** argv)
 
                                 // Ridireziono stdout
                                 close(1);
-                                dup(piped[1]);
+                                if (dup(piped[1]) < 0) {
+					perror("dup");
+					exit(EXIT_FAILURE);
+				}
                                 close(piped[1]);
 
                                 // Eseguo la grep mandando i risultati al figlio
@@ -138,12 +142,18 @@ int main(int argc, char** argv)
 
                         /* Ridireziono stdin */
                         close(0);
-                        dup(piped[0]);
+			if (dup(piped[0]) < 0) {
+				perror("dup");
+				exit(EXIT_FAILURE);
+			}
                         close(piped[0]);
 
                         /* Ridireziono stdout */
                         close(1);
-                        dup(ns);
+			if (dup(ns) < 0) {
+				perror("dup");
+				exit(EXIT_FAILURE);
+			}
                         close(ns);
 
                         execlp("sort", "sort", "-r", "-n", (char*)NULL);
