@@ -1,0 +1,3 @@
+60 lavazza macchina1 100
+80 nespresso nespresso123 140
+20 marca macchina2 30
